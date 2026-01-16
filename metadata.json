@@ -1,0 +1,5 @@
+{
+  "name": "Loyalty Card Wallet",
+  "description": "A digital wallet interface to manage and view loyalty cards, inspired by modern wallet UIs with a smooth, interactive card stack.",
+  "requestFramePermissions": []
+}
