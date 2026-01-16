@@ -11,7 +11,7 @@ interface CardProps {
 
 const { width } = Dimensions.get('window');
 const CARD_ASPECT_RATIO = 1.586;
-const CARD_WIDTH = width * 0.8;
+const CARD_WIDTH = width * 0.85;
 const CARD_HEIGHT = CARD_WIDTH / CARD_ASPECT_RATIO;
 
 export const Card: React.FC<CardProps> = ({ card, style }) => {

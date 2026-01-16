@@ -12,92 +12,132 @@ import {
 } from 'react-native';
 import { Card } from './components/Card';
 import { INITIAL_CARDS } from './constants';
+import type { CardData } from './types';
 
 const { width, height } = Dimensions.get('window');
 const CARD_ASPECT_RATIO = 1.586; // Standard credit card aspect ratio
-const CARD_WIDTH = width * 0.8;
+const CARD_WIDTH = width * 0.85;
 const CARD_HEIGHT = CARD_WIDTH / CARD_ASPECT_RATIO;
 const STACK_CARD_SEPARATION = 50; // Vertical separation for stacked cards
 
 const App: React.FC = () => {
+  const [cards, setCards] = useState<CardData[]>(INITIAL_CARDS);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   const cardAnimations = useRef(
-    INITIAL_CARDS.map(() => ({
+    cards.map(() => ({
       position: new Animated.ValueXY({ x: 0, y: 0 }),
       scale: new Animated.Value(1),
     }))
   ).current;
-
-  const animateCards = (activeIndex: number | null) => {
-    const isCardSelected = activeIndex !== null;
-    
-    INITIAL_CARDS.forEach((_, i) => {
-      const scale = 1 - (INITIAL_CARDS.length - 1 - i) * 0.04;
-      
-      let toValueY, toValueScale;
-
-      if (isCardSelected) {
-        if (i === activeIndex) {
-          // Focused card
-          toValueY = -CARD_HEIGHT * 0.5;
-          toValueScale = 1.1;
-        } else {
-          // Other cards stack at the bottom
-          const position = i < activeIndex ? i : i - 1;
-          toValueY = height * 0.35 + position * 15;
-          toValueScale = 0.9;
-        }
-      } else {
-        // Initial stack position
-        toValueY = -i * STACK_CARD_SEPARATION;
-        toValueScale = scale;
-      }
+  
+  // Animate cards to their initial stacked position
+  const animateInitial = () => {
+    cards.forEach((_, i) => {
+      const scale = 1 - (cards.length - 1 - i) * 0.04;
+      const toValueY = -i * STACK_CARD_SEPARATION;
       
       Animated.spring(cardAnimations[i].position, {
         toValue: { x: 0, y: toValueY },
-        useNativeDriver: false, // position does not support native driver well
+        useNativeDriver: false,
       }).start();
 
       Animated.spring(cardAnimations[i].scale, {
-        toValue: toValueScale,
+        toValue: scale,
         useNativeDriver: true,
       }).start();
     });
   };
 
   useEffect(() => {
-    animateCards(null); // Initial animation
+    animateInitial();
   }, []);
-  
-  const handlePress = (index: number) => {
-    const newSelectedIndex = selectedIndex === index ? null : index;
+
+  const handlePress = (pressedIndex: number) => {
+    const isDeselecting = selectedIndex === pressedIndex;
+    const newSelectedIndex = isDeselecting ? null : pressedIndex;
+    
     setSelectedIndex(newSelectedIndex);
-    animateCards(newSelectedIndex);
+    
+    if (newSelectedIndex !== null && !isDeselecting) {
+      // Bring pressed card to the front of the state array
+      setCards(prevCards => {
+        const selected = prevCards[pressedIndex];
+        const rest = prevCards.filter((_, idx) => idx !== pressedIndex);
+        return [selected, ...rest];
+      });
+    }
+
+    // Animate all cards based on the new selection
+    cards.forEach((_, i) => {
+      let toValueY, toValueScale;
+      const isSelectedCard = i === pressedIndex && !isDeselecting;
+
+      if (isSelectedCard) {
+        toValueY = -height * 0.15;
+        toValueScale = 1.1;
+      } else {
+        // All other cards are in the stack
+        const stackIndex = i > pressedIndex ? i -1 : i;
+        toValueY = height * 0.4 + stackIndex * 20;
+        toValueScale = 0.9;
+      }
+
+      if (isDeselecting) {
+        // Return all cards to initial stack
+        animateInitial();
+      } else {
+        Animated.spring(cardAnimations[i].position, {
+            toValue: { x: 0, y: toValueY },
+            useNativeDriver: false,
+        }).start();
+
+        Animated.spring(cardAnimations[i].scale, {
+            toValue: toValueScale,
+            useNativeDriver: true,
+        }).start();
+      }
+    });
   };
-  
+
+  // FIX: Use refs to provide the latest state and functions to the PanResponder callbacks, avoiding stale closures.
+  const selectedIndexRef = useRef(selectedIndex);
+  const cardsRef = useRef(cards);
+  const handlePressRef = useRef(handlePress);
+
+  useEffect(() => {
+    selectedIndexRef.current = selectedIndex;
+    cardsRef.current = cards;
+    handlePressRef.current = handlePress;
+  });
+
+
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => selectedIndex !== null,
+      onStartShouldSetPanResponder: () => selectedIndexRef.current !== null,
       onPanResponderMove: (_, gestureState) => {
-          if (selectedIndex !== null) {
-            cardAnimations[selectedIndex].position.setValue({ x: gestureState.dx, y: cardAnimations[selectedIndex].position.y._value });
-          }
+        if (selectedIndexRef.current !== null) {
+          // FIX: Correctly update only the x-value for horizontal drag, resolving the error from accessing private property '_value'.
+          cardAnimations[selectedIndexRef.current].position.x.setValue(gestureState.dx);
+        }
       },
       onPanResponderRelease: (_, gestureState) => {
-        if (selectedIndex === null) return;
-        
+        if (selectedIndexRef.current === null) return;
+
         if (Math.abs(gestureState.dx) > width / 4) {
+          // Swipe detected
           const direction = gestureState.dx > 0 ? 1 : -1;
-          let nextIndex = selectedIndex - direction; // Inverted because top of stack is end of array
+          const nextIndex = selectedIndexRef.current - direction; // Inverted because top of stack is end of array
           
-          if (nextIndex >= 0 && nextIndex < INITIAL_CARDS.length) {
-             handlePress(nextIndex); // This will handle setting state and animating
+          if (nextIndex >= 0 && nextIndex < cardsRef.current.length) {
+            handlePressRef.current(nextIndex);
           } else {
-             handlePress(selectedIndex); // Swipe out of bounds, snap back
+            // Swipe out of bounds, snap back
+            handlePressRef.current(selectedIndexRef.current);
           }
         } else {
-            handlePress(selectedIndex); // Not a strong enough swipe, snap back
+          // Not a strong enough swipe, snap back
+          handlePressRef.current(selectedIndexRef.current);
         }
       },
     })
@@ -106,7 +146,7 @@ const App: React.FC = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.cardArea} {...panResponder.panHandlers}>
-        {INITIAL_CARDS.map((card, index) => {
+        {cards.map((card, index) => {
           const isSelected = selectedIndex === index;
           
           const animatedStyle = {
@@ -115,7 +155,7 @@ const App: React.FC = () => {
               { translateY: cardAnimations[index].position.y },
               { scale: cardAnimations[index].scale },
             ],
-            zIndex: isSelected ? 100 : INITIAL_CARDS.length - index,
+            zIndex: isSelected ? 100 : cards.length - index,
           };
 
           return (
@@ -142,7 +182,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 50, // Give some space from the top
+    paddingTop: 50,
     position: 'relative',
   },
 });

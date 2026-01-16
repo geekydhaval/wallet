@@ -1,3 +1,4 @@
+
 import type { CardData } from './types';
 
 export const INITIAL_CARDS: CardData[] = [
@@ -63,16 +64,36 @@ export const INITIAL_CARDS: CardData[] = [
   },
 ];
 
-// FIX: Define and export CARD_THEMES for the AddEditCardModal component.
-// This provides a set of predefined themes with TailwindCSS classes for the UI
-// and hex color arrays for the card data.
+// FIX: Added missing CARD_THEMES export to be consumed by AddEditCardModal.
 export const CARD_THEMES = [
-  { name: 'Green', gradient: { from: 'from-green-400', to: 'to-teal-500', colors: ['#4ade80', '#14b8a6'] }, textColor: '#FFFFFF' },
-  { name: 'Blue', gradient: { from: 'from-blue-400', to: 'to-indigo-500', colors: ['#60a5fa', '#6366f1'] }, textColor: '#FFFFFF' },
-  { name: 'Orange', gradient: { from: 'from-orange-400', to: 'to-yellow-500', colors: ['#fb923c', '#eab308'] }, textColor: '#000000' },
-  { name: 'Purple', gradient: { from: 'from-purple-500', to: 'to-blue-600', colors: ['#a855f7', '#2563eb'] }, textColor: '#FFFFFF' },
-  { name: 'Dark', gradient: { from: 'from-gray-700', to: 'to-black', colors: ['#374151', '#000000'] }, textColor: '#FFFFFF' },
-  { name: 'Red', gradient: { from: 'from-red-500', to: 'to-red-800', colors: ['#ef4444', '#b91c1c'] }, textColor: '#FFFFFF' },
-  { name: 'Pink', gradient: { from: 'from-pink-500', to: 'to-rose-500', colors: ['#ec4899', '#f43f5e'] }, textColor: '#FFFFFF' },
-  { name: 'Sky', gradient: { from: 'from-sky-400', to: 'to-cyan-300', colors: ['#38bdf8', '#67e8f9'] }, textColor: '#000000' },
+  {
+    name: 'Green',
+    gradient: { colors: ['#4ade80', '#14b8a6'], from: 'from-green-400', to: 'to-teal-500' },
+    textColor: '#FFFFFF',
+  },
+  {
+    name: 'Blue',
+    gradient: { colors: ['#60a5fa', '#6366f1'], from: 'from-blue-400', to: 'to-indigo-500' },
+    textColor: '#FFFFFF',
+  },
+  {
+    name: 'Orange',
+    gradient: { colors: ['#fb923c', '#eab308'], from: 'from-orange-400', to: 'to-yellow-500' },
+    textColor: '#000000',
+  },
+  {
+    name: 'Purple',
+    gradient: { colors: ['#a855f7', '#2563eb'], from: 'from-purple-500', to: 'to-blue-600' },
+    textColor: '#FFFFFF',
+  },
+  {
+    name: 'Gray',
+    gradient: { colors: ['#374151', '#000000'], from: 'from-gray-700', to: 'to-black' },
+    textColor: '#FFFFFF',
+  },
+  {
+    name: 'Red',
+    gradient: { colors: ['#ef4444', '#b91c1c'], from: 'from-red-500', to: 'to-red-700' },
+    textColor: '#FFFFFF',
+  },
 ];
